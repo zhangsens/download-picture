@@ -2,9 +2,12 @@ var https = require("https");
 var fs = require("fs");
 var path = require("path");
 var request = require("request");
+var io = require("cheerio");
 
 var login = require("./lib/login.js");
 var save = require("./lib/save.js");
+
+var imgHead = "https://i.pximg.net/img-original";
 
 fs.exists("cookie/pixiv.txt", function(exists) {
     if (exists) {
@@ -18,8 +21,41 @@ fs.exists("cookie/pixiv.txt", function(exists) {
     }
 })
 
-var urls = [
-    "https://i.pximg.net/img-original/img/2017/05/15/00/26/54/62906806_p0.png",
-    "https://i.pximg.net/img-original/img/2017/05/15/02/29/54/62908861_p0.jpg"
-];
-save(urls);
+
+https.get("https://www.pixiv.net/ranking.php?mode=daily&content=illust", function(res) {
+    var html = "";
+    res.on("data", function(chunk) {
+        html += chunk;
+    });
+    res.on("end", function(res) {
+        var $ = io.load(html);
+        var content = $("section h2 a");
+        var urls = getImgUrl($, content);
+        // var urls = [
+        //     "https://i.pximg.net/img-original/img/2017/05/15/00/26/54/62906806_p0.png",
+        //     "https://i.pximg.net/img-original/img/2017/05/15/02/29/54/62908861_p0.jpg"
+        // ];
+        // save(urls);
+    })
+})
+
+function getImgUrl($, content) {
+    var img_url = {};
+    content.each(function(index, title) {
+        img_url[index] = title.attribs.href.match(/illust_id.[0-9]*/g);
+        https.get("https://www.pixiv.net/member_illust.php?mode=medium&" + img_url[index], function(res) {
+            let _html = "";
+
+            res.on("data", function(chunk) {
+                _html += chunk;
+            });
+            res.on("end", function() {
+                let $ = io.load(_html);
+                let imgUrl = $(".img-container img").attr("src");
+                let name = $(".img-container img").attr("src").match(/[0-9]*_[a-z][0-9]*/g);
+                img_url[index] = imgHead + imgUrl.match(/\/img\/[0-9]*\/[0-9]*\/[0-9]*\/[0-9]*\/[0-9]*\/[0-9]*\/[0-9]*_[a-z][0-9]*/g) + ".png";
+                save(img_url[index], name);
+            })
+        })
+    });
+}
