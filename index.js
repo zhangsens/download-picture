@@ -9,12 +9,26 @@ var save = require("./lib/save.js");
 
 var imgHead = "https://i.pximg.net/img-original";
 
+var pixiv_url = "https://www.pixiv.net/";
+
 fs.exists("cookie/pixiv.txt", function(exists) {
     if (exists) {
         //var cookie = fs.readFileSync("cookie/pixiv.txt", "utf-8");
         fs.readFile("cookie/pixiv.txt", "utf-8", function(err, res) {
             var cookie = res;
             console.log(cookie);
+            var jar = request.jar();
+            jar.setCookie(cookie, "https://www.pixiv.net/");
+            request({
+                url: pixiv_url,
+                headers: {
+                    'Referer': "https://www.pixiv.net",
+                    'User-Agent': "Mozilla/5.0 (Windows NT 6.3; rv:27.0) Gecko/20100101 Firefox/27.0",
+                },
+                jar: jar
+            }, function(err, res, body) {
+                fs.writeFile("./log/pixiv.html", body, "utf-8", function() {});
+            });
         });
     } else {
         login();
@@ -30,7 +44,7 @@ https.get("https://www.pixiv.net/ranking.php?mode=daily&content=illust", functio
     res.on("end", function(res) {
         var $ = io.load(html);
         var content = $("section h2 a");
-        var urls = getImgUrl($, content);
+        //var urls = getImgUrl($, content);
         // var urls = [
         //     "https://i.pximg.net/img-original/img/2017/05/15/00/26/54/62906806_p0.png",
         //     "https://i.pximg.net/img-original/img/2017/05/15/02/29/54/62908861_p0.jpg"
