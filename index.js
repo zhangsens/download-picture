@@ -23,11 +23,11 @@ fs.exists("cookie/pixiv.txt", function(exists) {
 
             //test cookie
             var jar = request.jar();
-            jar.setCookie(cookie, "https://www.pixiv.net/");
+            jar.setCookie(cookie, pixiv_url);
             request({
                 url: pixiv_url,
                 headers: {
-                    'Referer': "https://www.pixiv.net",
+                    'Referer': pixiv_url,
                     'User-Agent': "Mozilla/5.0 (Windows NT 6.3; rv:27.0) Gecko/20100101 Firefox/27.0",
                 },
                 jar: jar
@@ -59,39 +59,48 @@ function daily_rank() {
     })
 }
 
-//
-function getImgUrl($, content) {
+//解析前50名页面
+function getImgUrl(content) {
 
-    var img_url = {};
+    var img_url = [];
+    var name, href;
     var jar = request.jar();
     jar.setCookie(cookie, "https://www.pixiv.net/");
-    content.each(function(index, title) {
-        img_url[index] = title.attribs.href.match(/illust_id.[0-9]*/g);
-        request({
-            url: "https://www.pixiv.net/member_illust.php?mode=medium&" + img_url[index],
-            headers: {
-                'Referer': "https://www.pixiv.net",
-                'User-Agent': "Mozilla/5.0 (Windows NT 6.3; rv:27.0) Gecko/20100101 Firefox/27.0",
-            },
-            jar: jar
-        }, function(err, res, body) {
-            fs.writeFile("./log/pixiv_" + index + ".html", body, "utf-8", function() {});
-        });
+    for (var i = 0; i < 3; i++) {
+        img_url[i] = {};
+        name = content[i].children[0].data;
+        href = content[i].attribs.href.match(/illust_id.[0-9]*/g)
+        img_url[i].name = name;
+        img_url[i].href = href;
+    };
+    var index = 0;
 
-        // https.get("https://www.pixiv.net/member_illust.php?mode=medium&" + img_url[index], function(res) {
-        //     let _html = "";
-
-        //     res.on("data", function(chunk) {
-        //         _html += chunk;
-        //     });
-        //     res.on("end", function() {
-        //         let $ = io.load(_html);
-        //         let imgUrl = $(".img-container img").attr("src");
-        //         let name = $(".img-container img").attr("src").match(/[0-9]*_[a-z][0-9]*/g);
-        //         img_url[index] = imgHead + imgUrl.match(/\/img\/[0-9]*\/[0-9]*\/[0-9]*\/[0-9]*\/[0-9]*\/[0-9]*\/[0-9]*_[a-z][0-9]*/g) + ".png";
-        //         console.log(img_url[index]);
-        //         //save(img_url[index], name);
-        //     })
-        // })
-    });
+    //逐个获取
+    function httprequest() {
+        if (index < 3) {
+            request({
+                url: "https://www.pixiv.net/member_illust.php?mode=medium&" + img_url[index].href,
+                headers: {
+                    'Referer': "https://www.pixiv.net",
+                    'User-Agent': "Mozilla/5.0 (Windows NT 6.3; rv:27.0) Gecko/20100101 Firefox/27.0",
+                },
+                jar: jar
+            }, function(err, res, body) {
+                var querySelector = io.load(body);
+                var img = querySelector(".works_display");
+                if (!img.find("a")[1]) {
+                    //单张
+                    console.log(querySelector(".wrapper img")[0].attribs["data-src"]);
+                    //save(img_url[index], name);
+                } else {
+                    //一次多张作品
+                };
+                index++;
+                return httprequest();
+            });
+        } else {
+            return false;
+        }
+    }
+    httprequest();
 }
