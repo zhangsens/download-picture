@@ -35,6 +35,11 @@ fs.exists("cookie/pixiv.txt", function(exists) {
                 fs.writeFile("./log/pixiv.html", body, "utf-8", function() {});
             });
 
+            var picture_path = fs.existsSync("./picture");
+            if (!picture_path) {
+                fs.mkdirSync("./picture");
+            }
+
             daily_rank();
         });
     } else {
@@ -54,7 +59,7 @@ function daily_rank() {
         res.on("end", function(res) {
             var $ = io.load(html);
             var content = $("section h2 a");
-            getImgUrl($, content);
+            getImgUrl(content);
         })
     })
 }
@@ -66,18 +71,19 @@ function getImgUrl(content) {
     var name, href;
     var jar = request.jar();
     jar.setCookie(cookie, "https://www.pixiv.net/");
-    for (var i = 0; i < 3; i++) {
+    for (var i = 0; i < 5; i++) {
         img_url[i] = {};
         name = content[i].children[0].data;
-        href = content[i].attribs.href.match(/illust_id.[0-9]*/g)
+        href = /illust_id.([0-9]*)/g.exec(content[i].attribs.href);
         img_url[i].name = name;
-        img_url[i].href = href;
+        img_url[i].href = href[0];
+        img_url[i].id = href[1];
     };
     var index = 0;
 
     //逐个获取
     function httprequest() {
-        if (index < 3) {
+        if (index < 1) {
             request({
                 url: "https://www.pixiv.net/member_illust.php?mode=medium&" + img_url[index].href,
                 headers: {
@@ -87,13 +93,16 @@ function getImgUrl(content) {
                 jar: jar
             }, function(err, res, body) {
                 var querySelector = io.load(body);
+                var arr = [];
                 var img = querySelector(".works_display");
                 if (!img.find("a")[1]) {
                     //单张
-                    console.log(querySelector(".wrapper img")[0].attribs["data-src"]);
-                    //save(img_url[index], name);
+                    arr.push(querySelector(".wrapper img")[0].attribs["data-src"]);
+                    save(arr, img_url[index].id);
                 } else {
                     //一次多张作品
+                    arr.push(pixiv_url + img.find("a")[1].attribs.href);
+                    console.log(arr, img_url[index].id);
                 };
                 index++;
                 return httprequest();
