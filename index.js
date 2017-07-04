@@ -12,9 +12,10 @@ const pixiv_url = "https://www.pixiv.net/";
 
 var cookie;
 
+console.log(process.argv.slice(2));
+
 //set cookie and save it.when some page need cookie,use it.
 fs.exists("cookie/pixiv.txt", function(exists) {
-
     if (exists) {
         //var cookie = fs.readFileSync("cookie/pixiv.txt", "utf-8");
         fs.readFile("cookie/pixiv.txt", "utf-8", function(err, res) {
