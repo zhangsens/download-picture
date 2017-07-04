@@ -10,7 +10,7 @@
         "type": "git",
         "url": "git+https://github.com/zhangsens/download-picture.git"
     },
-    "author": "",
+    "author": "zhangs",
     "license": "ISC",
     "bugs": {
         "url": "https://github.com/zhangsens/download-picture/issues"
