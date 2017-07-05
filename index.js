@@ -12,7 +12,13 @@ const pixiv_url = "https://www.pixiv.net/";
 
 var cookie;
 
-console.log(process.argv.slice(2));
+var _date = process.argv.slice(2)[0]; //自定义时间 20170101,长度为8
+var today = new Date();
+today.setTime(today - 24 * 60 * 60 * 1000);
+var day = JSON.stringify(today.getDate()).length < 2 ? "0" + today.getDate() : today.getDate();
+var month = JSON.stringify(today.getMonth() + 1).length < 2 ? "0" + (today.getMonth() + 1) : today.getMonth() + 1;
+var year = today.getFullYear();
+var date = _date || year + month + day;
 
 //set cookie and save it.when some page need cookie,use it.
 fs.exists("cookie/pixiv.txt", function(exists) {
@@ -21,14 +27,18 @@ fs.exists("cookie/pixiv.txt", function(exists) {
         fs.readFile("cookie/pixiv.txt", "utf-8", function(err, res) {
 
             cookie = res;
-            console.log(cookie);
+            console.log(cookie + "\n");
 
             var picture_path = fs.existsSync("./picture");
             if (!picture_path) {
                 fs.mkdirSync("./picture");
             }
 
-            daily_rank(cookie);
+            if (date.length == 8) {
+                daily_rank(cookie, date);
+            } else {
+                console.log("输入的日期格式不正确");
+            }
 
 
             //test cookie 
